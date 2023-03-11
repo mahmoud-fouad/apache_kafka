@@ -9,16 +9,17 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
 @EnableAutoConfiguration
-public class KafkaProducerApplication implements ApplicationRunner {
+public class KafkaProducerApplication {
+//implements ApplicationRunner {
 
 	public static void main(String[] args) {
 		SpringApplication.run(KafkaProducerApplication.class, args);
 	}
 
-	@Autowired
+	// @Autowired
 	WikiProducer producer;
 	
-	@Override
+	//@Override
 	public void run(ApplicationArguments args) throws Exception {
 		producer.readWikiData();
 		

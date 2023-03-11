@@ -8,8 +8,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.mfouad.kafkaprod.Producer;
 
-//@RestController
-//@RequestMapping("apis/v1")
+@RestController
+@RequestMapping("apis/v1")
 public class API {
 	
 	Producer producer;

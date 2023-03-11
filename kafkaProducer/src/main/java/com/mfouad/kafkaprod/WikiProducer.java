@@ -15,7 +15,7 @@ import com.mfouad.kafkaprod.events.WikiMediaEventHandler;
 
 import lombok.extern.slf4j.Slf4j;
 
-@Service
+// @Service
 @Slf4j
 public class WikiProducer {
 	

@@ -1,5 +1,6 @@
 package com.mfouad.kafkaprod;
 
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.KafkaHeaders;
@@ -10,7 +11,7 @@ import org.springframework.stereotype.Service;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-//@Service
+@Service
 public class Producer {
 	
 	private KafkaTemplate<String, MessageDTO> template;
