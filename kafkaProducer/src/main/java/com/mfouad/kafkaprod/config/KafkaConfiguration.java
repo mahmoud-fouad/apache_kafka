@@ -12,6 +12,9 @@ public class KafkaConfiguration {
 	@Value("${topic.name}")
 	String topicName;
 	
+	@Value("${topic.avro.name}")
+	String avroTopicName;
+	
 	@Value("${topic.partitions}")
 	int partitions;
 	
@@ -26,6 +29,13 @@ public class KafkaConfiguration {
 		
 		return  TopicBuilder.name(topicName)
 		.partitions(partitions).build();
+	}
+	
+	@Bean
+	public NewTopic avroTopic(){
+		
+		return  TopicBuilder.name(avroTopicName)
+				.partitions(partitions).build();
 	}
 	
 	@Bean
