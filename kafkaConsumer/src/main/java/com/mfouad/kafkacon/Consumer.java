@@ -1,6 +1,8 @@
 package com.mfouad.kafkacon;
 
 
+import java.util.List;
+
 import org.springframework.kafka.annotation.DltHandler;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.annotation.RetryableTopic;
@@ -52,6 +54,18 @@ public class Consumer {
 		log.info("in consume3 {} --------------------");
 		log.info("receive {}",message);
 		checkMessage(message);
+		
+	}
+	
+	@KafkaListener(topics={"${topic.name}"},  groupId="my-batch-group", containerFactory = "batchKafkaListenerContainerFactory" )
+	public void consumeBatch(List<MessageDTO> messages){
+		
+		log.info("in consumeBatch {} --------------------");
+		log.info("receive {}",messages.size());
+		messages.forEach(message -> {
+			log.info("receive {}", message);
+			checkMessage(message);
+		});
 		
 	}
 	

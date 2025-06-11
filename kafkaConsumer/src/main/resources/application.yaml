@@ -1,23 +1,40 @@
 spring:
   kafka:
     consumer:
+      # Basic consumer settings
       bootstrap-servers: localhost:9092
       group-id: mygroup
-      auto-offset-reset: earliest
+      
+      # Poll loop configuration
+      max-poll-records: 500                    # Max records per poll() call
+      fetch-min-size: 1                        # Minimum bytes to fetch
+      fetch-max-wait: 500ms                    # Max time to wait for fetch-min-size
+      
+      # Session and heartbeat management
+      session-timeout: 30s                     # Time before consumer is considered dead
+      heartbeat-interval: 3s                   # Heartbeat frequency (should be 1/3 of session-timeout)
+      
+      # Offset management
+      auto-offset-reset: earliest               # What to do when no offset exists
+      enable-auto-commit: true                 # Auto-commit offsets
+      auto-commit-interval: 5s                 # How often to auto-commit
+      
+      # Deserialization - Using JSON deserializer
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      
+      # Additional poll settings
       properties:
-        -spring:
-          json:
-           trusted:
-            packages: "*"
-    producer:
-      bootstrap-servers: localhost:9092
-      key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
-
+        spring.json.trusted.packages: "*"      # Trust all packages for JSON deserialization
+        max.poll.interval.ms: 300000           # Max time between poll() calls (5 minutes)
+        request.timeout.ms: 30000              # Request timeout
+        retry.backoff.ms: 100                  # Retry backoff time
+        
+# Custom topic configuration
 topic:
-  name: mfouadTopicJson
+#  name: mfouadTopicJson
+  name: floor
 
+# Server configuration
 server:
   port: 8088

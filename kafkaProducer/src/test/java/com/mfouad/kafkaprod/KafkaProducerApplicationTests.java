@@ -28,6 +28,15 @@ public class KafkaProducerApplicationTests {
 	@Autowired
 	AvroProducer avroPro;
 
+	@Test
+	public void sendBatchMessages() {
+		
+		for(int i =0 ; i< 100 ; i++) {
+			pr.sendStringMessage("welcom "+i,"mfouadTopicJson");
+		}
+		
+	}
+	
 //	@Test
 	public void sendToPartion0() {
 		
@@ -51,7 +60,7 @@ public class KafkaProducerApplicationTests {
 	@Test
 	public void testSendStringMessage() {
 		
-		pr.sendStringMessage("welcom");
+		pr.sendStringMessage("welcom","third-floar-key");
 //		Awaitility.setDefaultPollInterval(10, TimeUnit.MILLISECONDS);
 		await().pollInterval(Duration.ofSeconds(3)).atMost(10,TimeUnit.SECONDS).untilAsserted(() -> {
 			
@@ -60,10 +69,10 @@ public class KafkaProducerApplicationTests {
 		
 	}
 	
-	@Test
+//	@Test
 	public void testSendMesagetoThirdFloor() {
-		for(int i=0;i<20;i++)
-		pr.sendStringMessage("welcom "+i,"thirdFloor");
+//		for(int i=0;i<20;i++)
+		pr.sendStringMessage("welcom ","thirdFloor");
 //		Awaitility.setDefaultPollInterval(10, TimeUnit.MILLISECONDS);
 		await().pollInterval(Duration.ofSeconds(3)).atMost(10,TimeUnit.SECONDS).untilAsserted(() -> {
 			

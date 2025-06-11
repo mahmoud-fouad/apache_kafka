@@ -19,6 +19,10 @@ public class FloorPartioner implements Partitioner {
 	@Override
 	public int partition(String topic, Object key, byte[] keyBytes, Object value, byte[] valueBytes, Cluster cluster) {
 		
+		if ("mfouadTopicJson".equals(topic)) {
+			return 0; // always send to partition 0 for this topic
+		}
+		
 		List<PartitionInfo> floorPartions = cluster.partitionsForTopic(topic);
 		int floorsNum = floorPartions.size();
 		if(keyBytes == null || (!(key instanceof String)))

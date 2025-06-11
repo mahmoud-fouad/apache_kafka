@@ -27,12 +27,19 @@ public class Producer {
 	String topicName;
 	
 	
-	public void sendStringMessage(String message){
+	public void sendStringMessage(String message,String... topicName){
+		String targetTopic =null;
 		
-		log.info("----------- send messag {} to topic {}",message,topicName);
+		if (topicName.length > 0) {
+			targetTopic = topicName[0];
+		}
+		else
+			targetTopic = this.topicName;
+		
+		log.info("----------- send messag {} to topic {}",message,targetTopic);
 		
 		Message<MessageDTO> sendMessage = MessageBuilder.withPayload(MessageDTO.builder().message(message).build())
-		.setHeader(KafkaHeaders.TOPIC, topicName)
+		.setHeader(KafkaHeaders.TOPIC, targetTopic)
 		.build();
 		CompletableFuture<SendResult<String, Object>> messageinQueue = template.send(sendMessage);
 //		CompletableFuture<SendResult<String, MessageDTO>> messageinQueue = template.send(topicName, 1, null, MessageDTO.builder().message(message).build());
