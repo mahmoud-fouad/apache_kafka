@@ -16,33 +16,45 @@ public class VoiceCommandParserTopology {
 	public static final String RECOGNIZED_COMMANDS_TOPIC = "recognized-commands";
 	private SpeechToTextService speechToTextService;
 	private VoiceTranslation translationService;
-	
-	public VoiceCommandParserTopology(SpeechToTextService speechToTextService,VoiceTranslation translationService) {
+
+	public VoiceCommandParserTopology(SpeechToTextService speechToTextService, VoiceTranslation translationService) {
 		this.speechToTextService = speechToTextService;
 		this.translationService = translationService;
 	}
 	
-	
+	public VoiceCommandParserTopology() {
+		this.speechToTextService = new MockSttClient();
+		this.translationService = new VoiceTranslationImpl();
+	}
+
 	public Topology buildTopology() {
+		System.out.println("Building topology for voice command parser...");
 		var streamsBuilder = new StreamsBuilder();
 
 		// Define the topology
-		var streamMap = streamsBuilder.<String,VoiceCommand>stream(VoiceCommandParserTopology.VOICE_COMMANDS_TOPIC,
-						Consumed.with(Serdes.String(),new JsonSerde<VoiceCommand>(VoiceCommand.class)))
-				.mapValues((readOnlyKey,value) -> speechToTextService.parseVoiceCommand(value))
-				.split(Named.as("language-"))
-				.branch((key,value) -> value.getLanguage().startsWith ("en"),
-						Branched.as("english"))
-				.defaultBranch(Branched.as("non-english"));
+		var branchesMap = streamsBuilder
+				.<String, VoiceCommand>stream(VoiceCommandParserTopology.VOICE_COMMANDS_TOPIC,
+						Consumed.with(Serdes.String(), new JsonSerde<VoiceCommand>(VoiceCommand.class)))
+				.mapValues((readOnlyKey, value) -> speechToTextService.parseVoiceCommand(value))
+				.split(Named.as("branches-"))
+				.branch((key, value) -> (value.getProbability()!=null && value.getProbability() < THRESHOLD), Branched.as("not-recognized"))
+				.defaultBranch(Branched.as("recognized"));
 		
-		streamMap.get("language-non-english").mapValues((key, value) -> {
-				return translationService.translate(value);
-		})
-				.merge(streamMap.get("language-english"))
-				
-				.to(VoiceCommandParserTopology.RECOGNIZED_COMMANDS_TOPIC,
-						Produced.with(Serdes.String(), new JsonSerde<ParseVoiceCommand>(ParseVoiceCommand.class)));
+		 branchesMap.get("branches-not-recognized")
+         .to(VoiceCommandParserTopology.UNRECOGNIZED_COMMAND_TOPIC, Produced.with(Serdes.String(), new JsonSerde<ParsedVoiceCommand>(ParsedVoiceCommand.class)));
+		 
+		 var languages = branchesMap.get("branches-recognized")
+	                .split(Named.as("language-"))
+	                .branch((key, voiceCommand) -> voiceCommand.getLanguage().startsWith("en"), Branched.as("english"))
+	                .defaultBranch(Branched.as("non-english"));
 
+
+		languages.get("language-non-english").mapValues((key, value) -> {
+			return translationService.translate(value);
+		}).merge(languages.get("language-english"))
+
+				.to(VoiceCommandParserTopology.RECOGNIZED_COMMANDS_TOPIC,
+						Produced.with(Serdes.String(), new JsonSerde<ParsedVoiceCommand>(ParsedVoiceCommand.class)));
 
 		return streamsBuilder.build();
 	}

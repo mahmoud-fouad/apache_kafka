@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ParseVoiceCommand {
+public class ParsedVoiceCommand {
 
 	private String id;
 	private String language;

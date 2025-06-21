@@ -2,6 +2,6 @@ package translation;
 
 public interface VoiceTranslation {
 	
-	ParseVoiceCommand translate(ParseVoiceCommand command);
+	ParsedVoiceCommand translate(ParsedVoiceCommand command);
 
 }

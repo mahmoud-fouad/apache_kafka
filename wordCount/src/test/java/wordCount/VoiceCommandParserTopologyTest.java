@@ -31,7 +31,8 @@ public class VoiceCommandParserTopologyTest {
 	
 	private TopologyTestDriver topologyTestDriver;
 	private TestInputTopic<String, VoiceCommand> voideCommandInputTopic;
-	private TestOutputTopic<String, ParseVoiceCommand> recognizedVoiceOutputTopic;
+	private TestOutputTopic<String, ParsedVoiceCommand> recognizedVoiceOutputTopic;
+	private TestOutputTopic<String, ParsedVoiceCommand> unRecognizedVoiceOutputTopic;
 
 	@Mock
 	SpeechToTextService speachToTextService;
@@ -46,7 +47,7 @@ public class VoiceCommandParserTopologyTest {
 	void setUp() {
 		// Initialize the TopologyTestDriver with the topology
 		var voiceCommandJsonSerde = new JsonSerde<>(VoiceCommand.class);
-		var parseVoiceCommandJsonSerde = new JsonSerde<>(ParseVoiceCommand.class);
+		var parseVoiceCommandJsonSerde = new JsonSerde<>(ParsedVoiceCommand.class);
 		var props=new Properties();
 		props.put("bootstrap.servers", "dummy:1234");
 		props.put(StreamsConfig.APPLICATION_ID_CONFIG, "test");
@@ -55,9 +56,15 @@ public class VoiceCommandParserTopologyTest {
 				VoiceCommandParserTopology.VOICE_COMMANDS_TOPIC,
 				Serdes.String().serializer()
 				, voiceCommandJsonSerde.serializer());
+		
+		
 		recognizedVoiceOutputTopic=topologyTestDriver.createOutputTopic(VoiceCommandParserTopology.RECOGNIZED_COMMANDS_TOPIC, Serdes.String().deserializer(),
 				parseVoiceCommandJsonSerde.deserializer()
 		);
+		
+//		unRecognizedVoiceOutputTopic=topologyTestDriver.createOutputTopic(VoiceCommandParserTopology.UNRECOGNIZED_COMMAND_TOPIC, Serdes.String().deserializer(),
+//				parseVoiceCommandJsonSerde.deserializer()
+//				);
 	}
 
 	@Test
@@ -72,7 +79,7 @@ public class VoiceCommandParserTopologyTest {
 		.build();
 
 		given(speachToTextService.parseVoiceCommand(command))
-				.willReturn(ParseVoiceCommand.builder().id(command.getId())
+				.willReturn(ParsedVoiceCommand.builder().id(command.getId())
 						.language("en-US")
 						.text("call john").build());
 
@@ -97,9 +104,11 @@ public class VoiceCommandParserTopologyTest {
 				.audioCodec("FLAC")
 				.build();
 		
-		ParseVoiceCommand englishValue = ParseVoiceCommand.builder().id(command.getId()).language("en-US")
+		ParsedVoiceCommand englishValue = ParsedVoiceCommand.builder().id(command.getId()).language("en-US").probability(0.9)
 				.text("call john").build();
-		ParseVoiceCommand spanishValue = ParseVoiceCommand.builder().id(command.getId()).text("llamar a john").language("es-ES").build();
+		ParsedVoiceCommand spanishValue = ParsedVoiceCommand.builder().id(command.getId()).text("llamar a john").language("es-ES")
+				.probability(0.9)
+				.build();
 		
 		given(speachToTextService.parseVoiceCommand(command))
 		.willReturn(spanishValue);
@@ -113,6 +122,69 @@ public class VoiceCommandParserTopologyTest {
 		
 		assertEquals(command.getId(), parsedVoiceCommand.getId());
 		assertEquals("call john", parsedVoiceCommand.getText());
+		
+		
+	}
+
+
+
+	@Test
+	void testSpanichVoiceCommandWithTransaltionPropbability() throws Exception {
+
+		byte[] voiceCommandJson = new byte[20];
+		new Random().nextBytes(voiceCommandJson);
+		var command =VoiceCommand.builder().id(UUID.randomUUID().toString())
+				.language("es-ES")
+				.audioData(voiceCommandJson)
+				.audioCodec("FLAC")
+				.build();
+
+		ParsedVoiceCommand englishValue = ParsedVoiceCommand.builder().id(command.getId()).language("en-US").probability(0.9)
+				.text("call john").build();
+		ParsedVoiceCommand spanishValue = ParsedVoiceCommand.builder().id(command.getId()).text("llamar a john").language("es-ES")
+				.probability(0.9)
+				.build();
+
+		given(speachToTextService.parseVoiceCommand(command))
+				.willReturn(spanishValue);
+
+		given(translationService.translate(spanishValue))
+				.willReturn(englishValue);
+
+		voideCommandInputTopic.pipeInput(command);
+
+		var parsedVoiceCommand = recognizedVoiceOutputTopic.readRecord().value();
+
+		assertEquals(command.getId(), parsedVoiceCommand.getId());
+		assertEquals("call john", parsedVoiceCommand.getText());
+		
+		verify(translationService).translate(any(ParsedVoiceCommand.class));
+
+
+	}
+	@Test
+	void testVoiceCommandWithoutTransaltionPropbability() throws Exception {
+		
+		byte[] voiceCommandJson = new byte[20];
+		new Random().nextBytes(voiceCommandJson);
+		var command =VoiceCommand.builder().id(UUID.randomUUID().toString())
+				.language("es-ES")
+				.audioData(voiceCommandJson)
+				.audioCodec("FLAC")
+				.build();
+		
+		ParsedVoiceCommand englishValue = ParsedVoiceCommand.builder().id(command.getId()).language("en-US").probability(0.5)
+				.text("call john").build();
+		
+		given(speachToTextService.parseVoiceCommand(command))
+		.willReturn(englishValue);
+		
+		
+		voideCommandInputTopic.pipeInput(command);
+		
+		 assertTrue(recognizedVoiceOutputTopic.isEmpty());
+		
+		verify(translationService,never()).translate(any(ParsedVoiceCommand.class));
 		
 		
 	}

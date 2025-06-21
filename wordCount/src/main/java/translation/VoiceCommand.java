@@ -15,5 +15,4 @@ public class VoiceCommand {
 	private String language;
 	private byte[] audioData;
 	private String audioCodec;
-	
 }
